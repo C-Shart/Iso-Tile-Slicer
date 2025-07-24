@@ -10,7 +10,10 @@ namespace IsoTiloSlicer
             public string ImagePath { get; set; }
 
             [Option("tilesize", Required = false)]
-            public int TileSize { get; set; } = 0;
+            public int TileHeight { get; set; } = 0;
+
+            [Option("tilesize", Required = false)]
+            public int TileWidth { get; set; } = 0;
 
             [Option("offset", Required = false)]
             public int Offset { get; set; } = 0;
@@ -48,10 +51,10 @@ namespace IsoTiloSlicer
                     image.ImagePath = o.ImagePath;
                 }
 
-                if(o.TileSize > 0)
+                if(o.TileHeight > 0 && o.TileWidth > 0)
                 {
-                    image.TileHeight = o.TileSize;
-                    image.TileWidth = o.TileSize;
+                    image.TileHeight = o.TileHeight;
+                    image.TileWidth = o.TileWidth;
                 }
 
                 if(o.Offset > 0)
