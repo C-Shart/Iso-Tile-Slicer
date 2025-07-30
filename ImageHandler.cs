@@ -1,5 +1,6 @@
 ﻿using IronSoftware.Drawing;
 using System.Text;
+using System.Drawing;
 using Color = IronSoftware.Drawing.Color;
 using Point = IronSoftware.Drawing.Point;
 
@@ -7,7 +8,7 @@ namespace IsoTiloSlicer
 {
     internal class ImageHandler
     {
-        public ImageHandler(string imagePath = "", int tileWidth = 44, int tileHeight = 44, int offset = 1, string outputDirectory = "out")
+        public ImageHandler(string imagePath = "", int tileWidth = 110, int tileHeight = 78, int offset = 1, string outputDirectory = "out")
         {
             ImagePath = imagePath;
             TileWidth = tileWidth;
@@ -16,7 +17,7 @@ namespace IsoTiloSlicer
             OutputDirectory = outputDirectory;
         }
 
-        public Color BackgroundColor { get; set; } = Color.Black;
+        public Color BackgroundColor { get; set; } = Color.Transparent;
         public string ImagePath { get; set; }
         public int TileWidth { get; set; }
         public int TileHeight { get; set; }
@@ -55,111 +56,83 @@ namespace IsoTiloSlicer
 
         private void SplitImage()
         {
-            int xOffset = -(TileWidth / 2), yOffset = -(TileHeight / 2);
+            Point left = new(0, TileHeight / 2);
+            Point top = new(TileWidth / 2, TileHeight);
+            Point right = new(TileWidth, TileHeight / 2);
+            Point bottom = new(TileWidth / 2, 0);
+            List<Point> tile = [left, top, right, bottom];
 
             for (int row = 0; row < ySlices; row++)
             {
                 for (int col = 0; col < xSlices; col++)
                 {
+                    // TODO: Remove when better way to avoid/remove extraneous blank images is found
+                    int kludge = 0;
+
                     var start = GetSectionStartPosition(row, col);
+                    AnyBitmap slice = new(TileWidth, TileHeight, BackgroundColor);
 
-                    AnyBitmap slice = new AnyBitmap(TileWidth, TileHeight, BackgroundColor);
-
-
-                    int offset = Offset;
-                    bool reverse = false;
-
-                    for (int yPixel = 0; yPixel < TileHeight; yPixel++)
+                    for (int y = 0; y < TileHeight; y++)
                     {
-                        //0, 0 -> 0, 1 -> 0, 44
-
-                        int grabX = (TileWidth / 2) - offset; // = 21
-                        int grabQty = offset * 2; //2
-
-                        for (int i = 0; i < grabQty; i++)
+                        for (int x = 0; x < TileWidth; x++)
                         {
-                            if (grabX + i + (int)start.X < 0 || grabX + i + (int)start.X >= OriginalImage.Width || yPixel + (int)start.Y < 0 || yPixel + (int)start.Y >= OriginalImage.Height)
+                            Point currentPixel = new(x, y);
+                            if (x + start.X < 0 ||
+                                x + start.X >= OriginalImage.Width ||
+                                x >= TileWidth ||
+                                y + (int)start.Y < 0 ||
+                                y + (int)start.Y >= OriginalImage.Height)
                             {
+                                kludge++;
                                 continue;
                             }
-                            slice.SetPixel(grabX + i, yPixel, OriginalImage.GetPixel(grabX + i + (int)start.X, yPixel + (int)start.Y));
-                        }
-
-                        if (!reverse)
-                        {
-                            offset++;
-                            if ((TileWidth / 2) - offset < 0)
+                            else if (PointInPolygon(currentPixel, tile))
                             {
-                                offset--; //Keep offset the same for this run
-                                reverse = true;
+                                slice.SetPixel(x, y, OriginalImage.GetPixel(x + (int)start.X, y + (int)start.Y));
                             }
                         }
-                        else
-                        {
-                            offset--;
-                        }
-                        //20, 4
                     }
-                    Slices.Add(slice);
 
+                    if (kludge < TileHeight * TileWidth)
+                    {
+                        Slices.Add(slice);
+                    }
                 }
             }
         }
 
-        private IronSoftware.Drawing.Point GetSectionStartPosition(int row, int column)
+        private Point GetSectionStartPosition(int row, int column)
         {
             int x = column * TileWidth;
             int y = (row * (TileHeight / 2)) - (TileHeight / 2);
 
             if (row % 2 == 0) //Number is even
             {
-                x -= (TileWidth / 2);
+                x -= TileWidth / 2;
             }
 
-            return new IronSoftware.Drawing.Point(x, y);
+            return new Point(x, y);
         }
 
         private AnyBitmap GenSampleGrid()
         {
-            AnyBitmap grid = new AnyBitmap(TileWidth, TileHeight);
+            AnyBitmap grid = new(TileWidth, TileHeight);
+            Color gColor = new(100, 0, 255, 0);
+            List<Point> points = [];
 
-            Color gColor = new Color(100, 0, 255, 0);
+            Point left = new(0, grid.Height / 2);
+            Point top = new(grid.Width / 2, grid.Height - 1);
+            Point bottom = new(grid.Width / 2, 0);
+            Point right = new(grid.Width - 1, grid.Height / 2);
 
-            int x = 0, y = grid.Height / 2;
+            points.AddRange(GetPointsInBresenhamLine(left, top));
+            points.AddRange(GetPointsInBresenhamLine(top, right));
+            points.AddRange(GetPointsInBresenhamLine(right, bottom));
+            points.AddRange(GetPointsInBresenhamLine(bottom, left));
 
-            while (x < grid.Width && y < grid.Height)
+            foreach (Point point in points)
             {
-                grid.SetPixel(x, y, gColor);
-                x++;
-                y++;
-            }
-
-            x = grid.Width / 2;
-            y = 0;
-            while (x < grid.Width && y < grid.Height)
-            {
-                grid.SetPixel(x, y, gColor);
-                x++;
-                y++;
-            }
-
-            x = grid.Width / 2;
-            y = 0;
-
-            while (x > 0 && y < grid.Height)
-            {
-                grid.SetPixel(x, y, gColor);
-                x--;
-                y++;
-            }
-
-            x = grid.Width - 1;
-            y = grid.Height / 2;
-            while (x > 0 && y < grid.Height)
-            {
-                grid.SetPixel(x, y, gColor);
-                x--;
-                y++;
+                grid.SetPixel((int)point.X, (int)point.Y, gColor);
             }
 
             return grid;
@@ -167,15 +140,18 @@ namespace IsoTiloSlicer
 
         public void SaveImages()
         {
+            if (!Directory.Exists(OutputDirectory))
+            {
+                Directory.CreateDirectory(OutputDirectory);
+            }
+
             int startingNumber = StartingFileNumber;
             foreach (var image in Slices)
             {
-                if (!Directory.Exists(OutputDirectory))
-                {
-                    Directory.CreateDirectory(OutputDirectory);
-                }
+                // Console.WriteLine(image.ToString());
+                // Console.WriteLine();
 
-                image.SaveAs(Path.Combine(OutputDirectory, string.Format(FileNameFormat + ".bmp", startingNumber)), AnyBitmap.ImageFormat.Bmp);
+                image.SaveAs(Path.Combine(OutputDirectory, string.Format(FileNameFormat + ".png", startingNumber)), AnyBitmap.ImageFormat.Png);
                 startingNumber++;
             }
 
@@ -200,7 +176,7 @@ namespace IsoTiloSlicer
             int c = 0, r = 0;
             foreach (var image in Slices)
             {
-                string fname = string.Format(FileNameFormat + ".bmp", startingNumber);
+                string fname = string.Format(FileNameFormat + ".png", startingNumber);
 
                 int gx = c;
                 int gy = r;
@@ -242,6 +218,89 @@ namespace IsoTiloSlicer
             {
                 Console.WriteLine(ex);
             }
+        }
+
+        private static List<Point> GetPointsInBresenhamLine(Point origin, Point target)
+        {
+            List<Point> points = [];
+            double x = origin.X;
+            double y = origin.Y;
+
+            float dx = Math.Abs((float)(target.X - x));
+            float dy = -Math.Abs((float)(target.Y - y));
+
+            int sx = (x < target.X) ? 1 : -1;
+            int sy = (y < target.Y) ? 1 : -1;
+
+            var err = dx + dy;
+
+            var longer = (dx > Math.Abs(dy)) ? dx : Math.Abs(dy);
+
+            for (int i = 0; i <= longer; i++)
+            {
+                var point = new Point(x, y);
+                points.Add(point);
+
+                var e2 = 2 * err;
+                if (e2 >= dy)
+                {
+                    if (x == target.X) { break; }
+                    err += dy;
+                    x += sx;
+                }
+                if (e2 <= dx)
+                {
+                    if (y == target.Y) { break; }
+                    err += dx;
+                    y += sy;
+                }
+            }
+
+            return points;
+        }
+
+        // Shamelessely stolen from https://www.geeksforgeeks.org/dsa/how-to-check-if-a-given-point-lies-inside-a-polygon/
+        private static bool PointInPolygon(Point point, List<Point> polygon)
+        {
+            int numVertices = polygon.Count;
+            double x = point.X, y = point.Y;
+            bool inside = false;
+
+            // Store the first point in the polygon and initialize the second point
+            Point p1 = polygon[0], p2;
+
+            // Loop through each edge in the polygon
+            for (int i = 1; i <= numVertices; i++)
+            {
+                // Get the next point in the polygon
+                p2 = polygon[i % numVertices];
+
+                // Check if the point is above the minimum y coordinate of the edge
+                if (y > Math.Min(p1.Y, p2.Y))
+                {
+                    // Check if the point is below the maximum y coordinate of the edge
+                    if (y <= Math.Max(p1.Y, p2.Y))
+                    {
+                        // Check if the point is to the left of the maximum x coordinate of the edge
+                        if (x < Math.Max(p1.X, p2.X))
+                        {
+                            // Calculate the x-intersection of the line connecting the point to the edge
+                            double xIntersection = (y - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y) + p1.X;
+
+                            // Check if the point is on the same line as the edge or to the left of the x-intersection
+                            if (p1.X == p2.X || x < xIntersection)
+                            {
+                                // Flip the inside flag
+                                inside = !inside;
+                            }
+                        }
+                    }
+                }
+                // Store the current point as the first point for the next iteration
+                p1 = p2;
+            }
+            // Return the value of the inside flag
+            return inside;
         }
     }
 }
