@@ -1,11 +1,14 @@
-# UO Isometric tile slicer
-That's a mouthful aint it?
+# General Isometric Tile Slicer
+This is a command line program to take an image and slice it up into isometric tiles.
 
-## What is this
-This is a command line program to take an image and slice it up in isometric tiles. This was designed for standard 44x44 Ultima Online tiles but could be modified to fit your needs.
+It was originally designed for standard 44x44 Ultima Online tiles. I found myself needing something to slice images into isometric tiles and this was the best thing I could find, so I decided to start modifying for my current and future needs.
 
-## How do I use this in 3 super simple, impossible to mess up steps?
-1. Either download the [latest release](https://github.com/bittiez/UO-Iso-Tile-Slicer/releases/latest) or `dotnet build -C Release` yourself.
+## How To Use
+1. Download the [latest release](https://github.com/C-Shart/Iso-Tile-Slicer/releases/latest)
+
+    a. Alternately, you can download the source code and run `dotnet build` in the terminal.
+
+2. Will update this more fully later.
 
 2. Next, put it somewhere, open a command prompt, terminal, powershell, etc and type `IsoTileSlicer.exe --image imagepath/mypic.png` (or `dotnet IsoTileSlicer.dll  --image imagepath/mypic.png for unix`)
 
