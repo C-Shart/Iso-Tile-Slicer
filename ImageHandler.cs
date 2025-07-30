@@ -66,8 +66,8 @@ namespace IsoTiloSlicer
             {
                 for (int col = 0; col < xSlices; col++)
                 {
-                    // TODO: Remove when better way to avoid/remove extraneous blank images is found
-                    int kludge = 0;
+                    // Used to compare all pixels in the slice
+                    List<Color> pixelCompare = [];
 
                     var start = GetSectionStartPosition(row, col);
                     AnyBitmap slice = new(TileWidth, TileHeight, BackgroundColor);
@@ -83,17 +83,19 @@ namespace IsoTiloSlicer
                                 y + (int)start.Y < 0 ||
                                 y + (int)start.Y >= OriginalImage.Height)
                             {
-                                kludge++;
                                 continue;
                             }
                             else if (PointInPolygon(currentPixel, tile))
                             {
+                                // Set slice pixel, add pixel to compare list
                                 slice.SetPixel(x, y, OriginalImage.GetPixel(x + (int)start.X, y + (int)start.Y));
+                                pixelCompare.Add(slice.GetPixel(x,y));
                             }
                         }
                     }
 
-                    if (kludge < TileHeight * TileWidth)
+                    // Add to slices only if all pixels are NOT the same color
+                    if (pixelCompare.Distinct().Count() > 1)
                     {
                         Slices.Add(slice);
                     }
@@ -148,9 +150,6 @@ namespace IsoTiloSlicer
             int startingNumber = StartingFileNumber;
             foreach (var image in Slices)
             {
-                // Console.WriteLine(image.ToString());
-                // Console.WriteLine();
-
                 image.SaveAs(Path.Combine(OutputDirectory, string.Format(FileNameFormat + ".png", startingNumber)), AnyBitmap.ImageFormat.Png);
                 startingNumber++;
             }
