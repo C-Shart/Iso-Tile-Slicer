@@ -8,12 +8,11 @@ namespace IsoTiloSlicer
 {
     internal class ImageHandler
     {
-        public ImageHandler(string imagePath = "", int tileWidth = 110, int tileHeight = 78, int offset = 0, string outputDirectory = "out")
+        public ImageHandler(string imagePath = "", int tileWidth = 110, int tileHeight = 78, string outputDirectory = "out")
         {
             ImagePath = imagePath;
             TileWidth = tileWidth;
             TileHeight = tileHeight;
-            Offset = offset;
             OutputDirectory = outputDirectory;
         }
 
@@ -21,7 +20,6 @@ namespace IsoTiloSlicer
         public string ImagePath { get; set; }
         public int TileWidth { get; set; }
         public int TileHeight { get; set; }
-        public int Offset { get; set; }
         public string OutputDirectory { get; set; }
         public AnyBitmap OriginalImage { get; private set; }
         public List<AnyBitmap> Slices { get; private set; } = new List<AnyBitmap>();
