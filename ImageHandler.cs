@@ -8,7 +8,7 @@ namespace IsoTiloSlicer
 {
     internal class ImageHandler
     {
-        public ImageHandler(string imagePath = "", int tileWidth = 110, int tileHeight = 78, int offset = 1, string outputDirectory = "out")
+        public ImageHandler(string imagePath = "", int tileWidth = 110, int tileHeight = 78, int offset = 0, string outputDirectory = "out")
         {
             ImagePath = imagePath;
             TileWidth = tileWidth;
@@ -88,8 +88,9 @@ namespace IsoTiloSlicer
                             else if (PointInPolygon(currentPixel, tile))
                             {
                                 // Set slice pixel, add pixel to compare list
-                                slice.SetPixel(x, y, OriginalImage.GetPixel(x + (int)start.X, y + (int)start.Y));
-                                pixelCompare.Add(slice.GetPixel(x,y));
+                                Color sourcePixel = OriginalImage.GetPixel(x + (int)start.X, y + (int)start.Y);
+                                slice.SetPixel(x, y, sourcePixel);
+                                pixelCompare.Add(sourcePixel);
                             }
                         }
                     }
@@ -287,7 +288,8 @@ namespace IsoTiloSlicer
                             double xIntersection = (y - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y) + p1.X;
 
                             // Check if the point is on the same line as the edge or to the left of the x-intersection
-                            if (p1.X == p2.X || x < xIntersection)
+                            // if (p1.X == p2.X || x < xIntersection)
+                            if (x < xIntersection)
                             {
                                 // Flip the inside flag
                                 inside = !inside;
