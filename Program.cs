@@ -15,9 +15,6 @@ namespace IsoTiloSlicer
             [Option("tilesize", Required = false)]
             public int TileWidth { get; set; } = 0;
 
-            [Option("offset", Required = false)]
-            public int Offset { get; set; } = 0;
-
             [Option("filename", Required = false)]
             public string FileName { get; set; }
 
@@ -37,7 +34,6 @@ namespace IsoTiloSlicer
                 Console.WriteLine("Usage: IsoTiloSlicer.exe --image path");
                 Console.WriteLine("Optional args:");
                 Console.WriteLine("--tilesize 44  <- Tile size.");
-                Console.WriteLine("--offset 1  <- 0 if tile size is an odd number, 1 if it is an even number. Other numbers have unknown results.");
                 Console.WriteLine("--output out  <- Where to save sliced images to.");
                 Console.WriteLine("--filename {0} <- {0} is the image number, you can use tile{0} or file{0} for example.");
                 Console.WriteLine("--startingnumber 0 <- The file number to start with.");
@@ -55,11 +51,6 @@ namespace IsoTiloSlicer
                 {
                     image.TileHeight = o.TileHeight;
                     image.TileWidth = o.TileWidth;
-                }
-
-                if(o.Offset > 0)
-                {
-                    image.Offset = o.Offset;
                 }
 
                 if(!string.IsNullOrEmpty(o.Output))
