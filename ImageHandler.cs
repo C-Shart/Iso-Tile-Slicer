@@ -1,6 +1,7 @@
-﻿using IronSoftware.Drawing;
+﻿#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+
+using IronSoftware.Drawing;
 using System.Text;
-using System.Drawing;
 using Color = IronSoftware.Drawing.Color;
 using Point = IronSoftware.Drawing.Point;
 
@@ -13,7 +14,7 @@ namespace IsoTiloSlicer
         public int TileWidth { get; set; } = tileWidth;
         public int TileHeight { get; set; } = tileHeight;
         public string OutputDirectory { get; set; } = outputDirectory;
-        public required AnyBitmap OriginalImage { get; set; }
+        public AnyBitmap OriginalImage { get; set; }
         public List<AnyBitmap> Slices { get; private set; } = new List<AnyBitmap>();
         public string LastErrorMessage { get; private set; } = string.Empty;
         public string FileNameFormat { get; set; } = "{0}";
