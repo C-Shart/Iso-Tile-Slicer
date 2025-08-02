@@ -6,22 +6,14 @@ using Point = IronSoftware.Drawing.Point;
 
 namespace IsoTiloSlicer
 {
-    internal class ImageHandler
+    internal class ImageHandler(string imagePath = "", int tileWidth = 110, int tileHeight = 78, string outputDirectory = "out")
     {
-        public ImageHandler(string imagePath = "", int tileWidth = 110, int tileHeight = 78, string outputDirectory = "out")
-        {
-            ImagePath = imagePath;
-            TileWidth = tileWidth;
-            TileHeight = tileHeight;
-            OutputDirectory = outputDirectory;
-        }
-
         public Color BackgroundColor { get; set; } = Color.Transparent;
-        public string ImagePath { get; set; }
-        public int TileWidth { get; set; }
-        public int TileHeight { get; set; }
-        public string OutputDirectory { get; set; }
-        public AnyBitmap OriginalImage { get; private set; }
+        public string ImagePath { get; set; } = imagePath;
+        public int TileWidth { get; set; } = tileWidth;
+        public int TileHeight { get; set; } = tileHeight;
+        public string OutputDirectory { get; set; } = outputDirectory;
+        public required AnyBitmap OriginalImage { get; set; }
         public List<AnyBitmap> Slices { get; private set; } = new List<AnyBitmap>();
         public string LastErrorMessage { get; private set; } = string.Empty;
         public string FileNameFormat { get; set; } = "{0}";
