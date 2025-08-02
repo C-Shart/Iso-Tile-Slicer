@@ -54,11 +54,11 @@ namespace IsoTiloSlicer
 
         private void SplitImage()
         {
-            Point left = new(0, TileHeight / 2);
-            Point top = new(TileWidth / 2, TileHeight);
+            Point left = new(-1, TileHeight / 2);
+            Point bottom = new(TileWidth / 2, TileHeight);
             Point right = new(TileWidth, TileHeight / 2);
-            Point bottom = new(TileWidth / 2, 0);
-            List<Point> tile = [left, top, right, bottom];
+            Point top = new(TileWidth / 2, -1);
+            List<Point> tile = [left, bottom, right, top];
 
             for (int row = 0; row < ySlices; row++)
             {
@@ -75,6 +75,7 @@ namespace IsoTiloSlicer
                         for (int x = 0; x < TileWidth; x++)
                         {
                             Point currentPixel = new(x, y);
+
                             if (x + start.X < 0 ||
                                 x + start.X >= OriginalImage.Width ||
                                 x >= TileWidth ||
