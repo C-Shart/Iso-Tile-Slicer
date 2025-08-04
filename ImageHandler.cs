@@ -19,6 +19,10 @@ namespace IsoTiloSlicer
         public string LastErrorMessage { get; private set; } = string.Empty;
         public string FileNameFormat { get; set; } = "{0}";
         public int StartingFileNumber { get; set; } = 0;
+        public List<Point> TileLeftTop {get; set; } = [];
+        public List<Point> TileLeftBottom {get; set; } = [];
+        public List<Point> TileRightTop {get; set; } = [];
+        public List<Point> TileRightBottom {get; set; } = [];
 
         private int xSlices = 0, ySlices = 0;
 
@@ -26,6 +30,15 @@ namespace IsoTiloSlicer
         {
             if (File.Exists(ImagePath))
             {
+                Point top = new(TileWidth / 2, 0);
+                Point left = new(0, TileHeight / 2);
+                Point bottom = new(TileWidth / 2, TileHeight - 1);
+                Point right = new(TileWidth - 1, TileHeight / 2);
+
+                TileLeftTop = GetPointsInBresenhamLine(left, top);
+                TileLeftBottom = GetPointsInBresenhamLine(left, bottom);
+                TileRightTop = GetPointsInBresenhamLine(right, top);
+                TileRightBottom = GetPointsInBresenhamLine(right, bottom);
                 OriginalImage = AnyBitmap.FromFile(ImagePath);
 
                 xSlices = (int)Math.Ceiling((double)OriginalImage.Width / (double)TileWidth) + 1;
@@ -47,12 +60,6 @@ namespace IsoTiloSlicer
 
         private void SplitImage()
         {
-            Point left = new(-1, TileHeight / 2);
-            Point bottom = new(TileWidth / 2, TileHeight);
-            Point right = new(TileWidth, TileHeight / 2);
-            Point top = new(TileWidth / 2, -1);
-            List<Point> tile = [left, bottom, right, top];
-
             for (int row = 0; row < ySlices; row++)
             {
                 for (int col = 0; col < xSlices; col++)
@@ -69,15 +76,43 @@ namespace IsoTiloSlicer
                         {
                             Point currentPixel = new(x, y);
 
-                            if (x + start.X < 0 ||
-                                x + start.X >= OriginalImage.Width ||
-                                x >= TileWidth ||
-                                y + (int)start.Y < 0 ||
-                                y + (int)start.Y >= OriginalImage.Height)
+                            bool outsideLeftTop = false;
+                            bool outsideLeftBottom = false;
+                            bool outsideRightTop = false;
+                            bool outsideRightBottom = false;
+
+                            // Check each tile quadrant to see if the pixel is outside of the tile border
+                            if (x < TileWidth / 2 && y < TileHeight / 2)
+                            {
+                                outsideLeftTop = LeftOfBresenham(TileLeftTop, currentPixel, true) && AboveBresenham(TileLeftTop, currentPixel);
+                            }
+                            else if (x >= TileWidth / 2 && y <= TileHeight / 2)
+                            {
+                                outsideRightTop = !LeftOfBresenham(TileRightTop, currentPixel) && AboveBresenham(TileRightTop, currentPixel);
+                            }
+                            else if (x < TileWidth / 2 && y > TileHeight / 2)
+                            {
+                                outsideLeftBottom = LeftOfBresenham(TileLeftBottom, currentPixel) && !AboveBresenham(TileLeftBottom, currentPixel);
+                            }
+                            else if (x >= TileWidth / 2 && y >= TileHeight / 2)
+                            {
+                                outsideRightBottom = !LeftOfBresenham(TileRightBottom, currentPixel) && !AboveBresenham(TileRightBottom, currentPixel);
+                            }
+
+                            // Skip the pixel if it's outside the original image dimensions or the tile
+                            if (x + start.X < 0
+                                || x + start.X >= OriginalImage.Width
+                                || x >= TileWidth
+                                || y + (int)start.Y < 0
+                                || y + (int)start.Y >= OriginalImage.Height
+                                || outsideLeftTop
+                                || outsideLeftBottom
+                                || outsideRightTop
+                                || outsideRightBottom)
                             {
                                 continue;
                             }
-                            else if (PointInPolygon(currentPixel, tile))
+                            else
                             {
                                 // Set slice pixel, add pixel to compare list
                                 Color sourcePixel = OriginalImage.GetPixel(x + (int)start.X, y + (int)start.Y);
@@ -94,6 +129,37 @@ namespace IsoTiloSlicer
                     }
                 }
             }
+        }
+
+        private static bool LeftOfBresenham(List<Point> line, Point pixel, bool topLeft = false)
+        {
+            bool leftOfLine = false;
+            List<Point> yMatch = new([.. line.Where(point => point.Y == pixel.Y)]);
+            if (yMatch.Count > 0)
+            {
+                Point lineX = yMatch.First();
+                if (!topLeft)
+                {
+                    leftOfLine = lineX.X >= pixel.X;
+                }
+                else
+                {
+                    leftOfLine = lineX.X > pixel.X;
+                }
+            }
+            return leftOfLine;
+        }
+
+        private static bool AboveBresenham(List<Point> line, Point pixel)
+        {
+            bool aboveLine = false;
+            List<Point> xMatch = new([.. line.Where(point => point.X == pixel.X)]);
+            if (xMatch.Count > 0)
+            {
+                Point lineY = xMatch.First();
+                aboveLine = lineY.Y >= pixel.Y;
+            }
+            return aboveLine;
         }
 
         private Point GetSectionStartPosition(int row, int column)
@@ -115,15 +181,10 @@ namespace IsoTiloSlicer
             Color gColor = new(100, 0, 255, 0);
             List<Point> points = [];
 
-            Point left = new(0, grid.Height / 2);
-            Point top = new(grid.Width / 2, grid.Height - 1);
-            Point bottom = new(grid.Width / 2, 0);
-            Point right = new(grid.Width - 1, grid.Height / 2);
-
-            points.AddRange(GetPointsInBresenhamLine(left, top));
-            points.AddRange(GetPointsInBresenhamLine(top, right));
-            points.AddRange(GetPointsInBresenhamLine(right, bottom));
-            points.AddRange(GetPointsInBresenhamLine(bottom, left));
+            points.AddRange(TileLeftTop);
+            points.AddRange(TileLeftBottom);
+            points.AddRange(TileRightBottom);
+            points.AddRange(TileRightTop);
 
             foreach (Point point in points)
             {
@@ -249,51 +310,6 @@ namespace IsoTiloSlicer
             }
 
             return points;
-        }
-
-        // Shamelessely stolen from https://www.geeksforgeeks.org/dsa/how-to-check-if-a-given-point-lies-inside-a-polygon/
-        private static bool PointInPolygon(Point point, List<Point> polygon)
-        {
-            int numVertices = polygon.Count;
-            double x = point.X, y = point.Y;
-            bool inside = false;
-
-            // Store the first point in the polygon and initialize the second point
-            Point p1 = polygon[0], p2;
-
-            // Loop through each edge in the polygon
-            for (int i = 1; i <= numVertices; i++)
-            {
-                // Get the next point in the polygon
-                p2 = polygon[i % numVertices];
-
-                // Check if the point is above the minimum y coordinate of the edge
-                if (y > Math.Min(p1.Y, p2.Y))
-                {
-                    // Check if the point is below the maximum y coordinate of the edge
-                    if (y <= Math.Max(p1.Y, p2.Y))
-                    {
-                        // Check if the point is to the left of the maximum x coordinate of the edge
-                        if (x < Math.Max(p1.X, p2.X))
-                        {
-                            // Calculate the x-intersection of the line connecting the point to the edge
-                            double xIntersection = (y - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y) + p1.X;
-
-                            // Check if the point is on the same line as the edge or to the left of the x-intersection
-                            // if (p1.X == p2.X || x < xIntersection)
-                            if (x < xIntersection)
-                            {
-                                // Flip the inside flag
-                                inside = !inside;
-                            }
-                        }
-                    }
-                }
-                // Store the current point as the first point for the next iteration
-                p1 = p2;
-            }
-            // Return the value of the inside flag
-            return inside;
         }
     }
 }
